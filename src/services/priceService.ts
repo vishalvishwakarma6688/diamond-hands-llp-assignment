@@ -24,7 +24,7 @@ export async function fetchAndSavePricesForKnownSymbols() {
     let newPrice: Decimal;
     if (last) {
       const lastVal = new Decimal(last.priceInr.toString());
-      const pct = (Math.random() - 0.5) * 0.02; // +/-1%
+      const pct = (Math.random() - 0.5) * 0.02;
       newPrice = lastVal.mul(new Decimal(1 + pct));
     } else {
       const base = SYMBOL_BASES[s] ?? 1000 + Math.random() * 1000;

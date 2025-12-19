@@ -15,7 +15,6 @@ export async function processReward(req: RewardRequest) {
   const { userId, symbol } = req;
   const units = new Decimal(req.units);
   if (units.lte(0)) throw new Error("units must be > 0");
-
   if (req.idempotencyKey) {
     const existing = await prisma.rewardEvent.findUnique({
       where: { idempotencyKey: req.idempotencyKey },
@@ -25,19 +24,15 @@ export async function processReward(req: RewardRequest) {
       return { alreadyProcessed: true, reward: existing };
     }
   }
-
-  let priceVal = await getLatestPrice(symbol);
+  let priceVal = await getLatestPrice(symbol) as any;
   if (!priceVal) {
-    priceVal = "1000.00";
+    priceVal = "1000.00" as any;
   }
   const pricePerUnit = new Decimal(priceVal.toString());
   const gross = pricePerUnit.mul(units);
-
   const fees = computeFees(gross);
   const totalInr = gross.plus(fees.totalFees);
-
   const now = req.timestamp ? new Date(req.timestamp) : new Date();
-
   const result = await prisma.$transaction(async (tx: any) => {
     // 1) Create JournalEntry
     const journal = await tx.journalEntry.create({
@@ -45,7 +40,6 @@ export async function processReward(req: RewardRequest) {
         description: `Reward ${units.toString()} ${symbol} to user ${userId} at ${now.toISOString()}`,
       },
     });
-
     await tx.journalLine.createMany({
       data: [
         {
@@ -68,7 +62,6 @@ export async function processReward(req: RewardRequest) {
         },
       ],
     });
-
     await tx.stockUnitLine.create({
       data: {
         journalEntryId: journal.id,
@@ -90,9 +83,7 @@ export async function processReward(req: RewardRequest) {
         journalEntryId: journal.id,
       },
     });
-
     return { reward, journal };
   });
-
   return { alreadyProcessed: false, ...result };
 }
